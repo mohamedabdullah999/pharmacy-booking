@@ -19,4 +19,9 @@ class Item extends Model
     {
         return $this->hasMany(ItemPricingRule::class);
     }
+
+    public function bookings(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Booking::class);
+    }
 }

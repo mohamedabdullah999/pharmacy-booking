@@ -12,23 +12,25 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('bookings', function (Blueprint $table) {
-            $table->id();
+           $table->id();
+            
             $table->string('reference_number')->unique();
             
+            $table->foreignId('item_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('pricing_rule_id')->constrained('item_pricing_rules')->cascadeOnDelete();
+            
             $table->string('customer_name');
-            $table->string('customer_email');
+            $table->string('customer_national_id', 14);
             $table->string('customer_phone');
-            $table->string('customer_national_id'); 
+            $table->string('customer_email');
             
-            $table->decimal('total_amount', 12, 2); 
+            $table->decimal('requested_amount', 8, 2); 
+            $table->decimal('total_price', 10, 2); 
             
-            $table->enum('status', ['pending_payment', 'paid', 'expired', 'cancelled', 'completed'])->default('pending_payment');
+            $table->enum('status', ['pending', 'paid', 'expired', 'cancelled'])->default('pending');
             
-            $table->timestamp('expires_at')->nullable(); 
-
-            $table->index('status');
-            $table->index('customer_national_id');
-            $table->index('created_at');
+            $table->timestamp('expires_at')->nullable();
+            
             $table->timestamps();
         });
     }

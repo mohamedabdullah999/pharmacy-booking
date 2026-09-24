@@ -33,9 +33,8 @@
         <div class="p-8">
             <h3 class="text-xl font-bold text-[var(--color-zu-blue)] mb-6 border-b pb-2">تفاصيل الطلب</h3>
             
-            <form action="#" method="POST" id="booking-form">
+            <form action="{{ route('booking.store', $item->id) }}" method="POST" id="booking-form">    
                 @csrf
-                
                 <div class="mb-6">
                     <label class="block text-sm font-bold text-gray-700 mb-3">اختر نظام التسعير:</label>
                     <div class="space-y-3">
