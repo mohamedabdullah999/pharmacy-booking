@@ -2,11 +2,9 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\CatalogController;
 
-Route::get('/', function () {
-    return view('welcome');
-});
-
+Route::get('/', [CatalogController::class, 'index'])->name('catalog.index');
 
 // admin routes
 Route::get('/admin/login', [LoginController::class, 'showLoginForm'])->name('login');
