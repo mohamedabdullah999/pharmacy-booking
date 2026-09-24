@@ -17,3 +17,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
         return view('admin.dashboard');
     })->name('admin.dashboard');
 });
+
+Route::get('/', [CatalogController::class, 'index'])->name('catalog.index');
+Route::get('/item/{id}', [CatalogController::class, 'show'])->name('catalog.show');

@@ -70,9 +70,9 @@
                 </div>
 
                 <div class="p-4 border-t bg-gray-50 mt-auto">
-                    <button class="w-full bg-[var(--color-zu-blue)] text-white py-2 rounded font-bold hover:bg-[var(--color-zu-maroon)] transition duration-300 shadow-sm hover:shadow-md">
+                    <a href="{{ route('catalog.show', $item->id) }}" class="block text-center w-full bg-[var(--color-zu-blue)] text-white py-2 rounded font-bold hover:bg-[var(--color-zu-maroon)] transition duration-300 shadow-sm hover:shadow-md">
                         {{ $item->type === 'sale' ? 'شراء الآن' : 'حجز الجهاز' }}
-                    </button>
+                    </a>
                 </div>
             </div>
         @empty

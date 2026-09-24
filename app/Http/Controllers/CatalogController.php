@@ -28,4 +28,18 @@ class CatalogController extends Controller
 
         return view('catalog.index', compact('departments', 'items'));
     }
+
+    public function show($id)
+    {
+        $item = Item::with([
+            'pricingRules:id,item_id,unit_type,price,min_duration,condition_text',
+            'department:id,name'
+        ])->findOrFail($id);
+
+        if (!$item->is_active) {
+            abort(404, 'هذا العنصر غير متاح حالياً.');
+        }
+
+        return view('catalog.show', compact('item'));
+    }
 }
