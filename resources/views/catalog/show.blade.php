@@ -35,6 +35,34 @@
             
             <form action="{{ route('booking.store', $item->id) }}" method="POST" id="booking-form">    
                 @csrf
+                
+                @if($errors->any())
+                    <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm font-bold">
+                        <ul class="space-y-1">
+                            @foreach($errors->all() as $error)
+                                <li>- {{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                @if($item->type === 'rental')
+                <div class="mb-6 p-5 bg-blue-50/50 border border-blue-100 rounded-xl shadow-sm">
+                    <h4 class="font-bold text-[var(--color-zu-blue)] mb-4">حدد موعد الحجز (من 9 صباحاً لـ 5 مساءً)</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">تاريخ الحجز</label>
+                            <input type="date" name="booking_date" id="booking-date" min="{{ date('Y-m-d') }}" value="{{ old('booking_date') }}" required class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-zu-blue)] focus:outline-none transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">وقت البدء</label>
+                            <input type="time" name="start_time" id="start-time" min="09:00" max="16:30" value="{{ old('start_time') }}" required class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[var(--color-zu-blue)] focus:outline-none transition">
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-3">* سيتم حساب وقت الانتهاء تلقائياً بناءً على المدة المطلوبة أسفله.</p>
+                </div>
+                @endif
+
                 <div class="mb-6">
                     <label class="block text-sm font-bold text-gray-700 mb-3">اختر نظام التسعير:</label>
                     <div class="space-y-3">
@@ -45,7 +73,7 @@
                                        data-unit="{{ $rule->unit_type }}" 
                                        data-min="{{ $rule->min_duration ?? 1 }}"
                                        class="w-5 h-5 text-[var(--color-zu-blue)] focus:ring-[var(--color-zu-blue)]"
-                                       {{ $index === 0 ? 'checked' : '' }}>
+                                       {{ (old('pricing_rule_id') == $rule->id || $index === 0) ? 'checked' : '' }}>
                                 <span class="mr-3 font-semibold text-gray-800">
                                     {{ $rule->price }} جنيه / {{ $rule->unit_type }}
                                     @if($rule->min_duration) <span class="text-xs text-gray-500 block">(حد أدنى: {{ $rule->min_duration }})</span> @endif
@@ -58,10 +86,17 @@
                 <div class="mb-6">
                     <label class="block text-sm font-bold text-gray-700 mb-2">
                         {{ $item->type === 'sale' ? 'الكمية المطلوبة' : 'المدة المطلوبة' }} (<span id="unit-label"></span>):
+                        
+                        @if($item->type === 'sale')
+                            <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full mr-2 font-normal">
+                                المتاح في المخزن: {{ $item->stock_quantity }}
+                            </span>
+                        @endif
                     </label>
+
                     <div class="flex items-center">
                         <button type="button" id="btn-decrease" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-r-lg font-bold hover:bg-gray-300 transition">-</button>
-                        <input type="number" name="requested_amount" id="requested-amount" value="1" step="0.5" class="w-20 text-center border-y border-gray-200 py-2 focus:outline-none focus:ring-0">
+                        <input type="number" name="requested_amount" id="requested-amount" value="{{ old('requested_amount', 1) }}" step="0.5" class="w-20 text-center border-y border-gray-200 py-2 focus:outline-none focus:ring-0">
                         <button type="button" id="btn-increase" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-l-lg font-bold hover:bg-gray-300 transition">+</button>
                     </div>
                     <p id="error-msg" class="text-red-500 text-xs mt-2 hidden"></p>
@@ -70,14 +105,14 @@
                 <div class="space-y-4 mb-6 border-t pt-6">
                     <h4 class="font-bold text-gray-700">بيانات الطالب</h4>
                     <div>
-                        <input type="text" name="customer_name" placeholder="الاسم الرباعي" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-[var(--color-zu-blue)] focus:border-[var(--color-zu-blue)]">
+                        <input type="text" name="customer_name" value="{{ old('customer_name') }}" placeholder="الاسم الرباعي" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-[var(--color-zu-blue)] focus:border-[var(--color-zu-blue)]">
                     </div>
                     <div>
-                        <input type="text" name="customer_national_id" placeholder="الرقم القومي (14 رقم)" required pattern="[0-9]{14}" title="يجب إدخال 14 رقم" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-[var(--color-zu-blue)] focus:border-[var(--color-zu-blue)]">
+                        <input type="text" name="customer_national_id" value="{{ old('customer_national_id') }}" placeholder="الرقم القومي (14 رقم)" required pattern="[0-9]{14}" title="يجب إدخال 14 رقم" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-[var(--color-zu-blue)] focus:border-[var(--color-zu-blue)]">
                     </div>
                     <div class="grid grid-cols-2 gap-4">
-                        <input type="text" name="customer_phone" placeholder="رقم الهاتف" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-[var(--color-zu-blue)] focus:border-[var(--color-zu-blue)]">
-                        <input type="email" name="customer_email" placeholder="البريد الإلكتروني" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-[var(--color-zu-blue)] focus:border-[var(--color-zu-blue)]">
+                        <input type="text" name="customer_phone" value="{{ old('customer_phone') }}" placeholder="رقم الهاتف" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-[var(--color-zu-blue)] focus:border-[var(--color-zu-blue)]">
+                        <input type="email" name="customer_email" value="{{ old('customer_email') }}" placeholder="البريد الإلكتروني" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-[var(--color-zu-blue)] focus:border-[var(--color-zu-blue)]">
                     </div>
                 </div>
 
@@ -103,25 +138,79 @@
         const totalPriceEl = document.getElementById('total-price');
         const unitLabelEl = document.getElementById('unit-label');
         const errorMsgEl = document.getElementById('error-msg');
+        const dateInput = document.getElementById('booking-date');
+        const startTimeInput = document.getElementById('start-time');
+
+        const itemType = "{{ $item->type }}";
+        const maxStock = parseInt("{{ $item->stock_quantity ?? 0 }}");
+
+        if (dateInput) {
+            dateInput.addEventListener('change', function() {
+                const date = new Date(this.value);
+                if (date.getDay() === 5) { 
+                    alert('عذراً، يوم الجمعة عطلة رسمية. يرجى اختيار يوم آخر.');
+                    this.value = '';
+                }
+            });
+        }
 
         function calculateTotal() {
             const selectedRadio = document.querySelector('input[name="pricing_rule_id"]:checked');
             if (!selectedRadio) return;
 
             const price = parseFloat(selectedRadio.dataset.price);
-            const minDuration = parseFloat(selectedRadio.dataset.min);
+            const minDuration = parseFloat(selectedRadio.dataset.min) || 1;
             const unit = selectedRadio.dataset.unit;
             let amount = parseFloat(amountInput.value);
 
             unitLabelEl.textContent = unit;
 
-            if (amount < minDuration) {
-                errorMsgEl.textContent = `الحد الأدنى لهذا الاختيار هو ${minDuration}`;
-                errorMsgEl.classList.remove('hidden');
-                amountInput.value = minDuration;
-                amount = minDuration;
-            } else {
-                errorMsgEl.classList.add('hidden');
+            if (itemType === 'sale') {
+                amount = Math.floor(amount);
+                amountInput.value = amount;
+
+                if (amount > maxStock) {
+                    errorMsgEl.textContent = `عذراً، الكمية المتاحة في المخزن هي ${maxStock} فقط.`;
+                    errorMsgEl.classList.remove('hidden');
+                    amount = maxStock;
+                    amountInput.value = amount;
+                } else if (amount < 1) {
+                    amount = 1;
+                    amountInput.value = amount;
+                    errorMsgEl.classList.add('hidden');
+                } else {
+                    errorMsgEl.classList.add('hidden');
+                }
+            } 
+            else {
+                let maxAllowedHours = 8;
+                if (startTimeInput && startTimeInput.value && (unit.toLowerCase().includes('hr') || unit.includes('ساعة'))) {
+                    const [hours, minutes] = startTimeInput.value.split(':').map(Number);
+                    const startDecimal = hours + (minutes / 60);
+                    const endOfBusinessDecimal = 17;
+                    maxAllowedHours = endOfBusinessDecimal - startDecimal;
+                    
+                    if (maxAllowedHours > 8) maxAllowedHours = 8;
+                    if (maxAllowedHours < 0) maxAllowedHours = 0;
+                }
+
+                if (amount < minDuration) {
+                    errorMsgEl.textContent = `الحد الأدنى لهذا الاختيار هو ${minDuration}`;
+                    errorMsgEl.classList.remove('hidden');
+                    amount = minDuration;
+                    amountInput.value = amount;
+                } else {
+                    errorMsgEl.classList.add('hidden');
+                }
+
+                if (unit.toLowerCase().includes('hr') || unit.includes('ساعة')) {
+                    if (amount > maxAllowedHours) {
+                        errorMsgEl.textContent = `أقصى مدة مسموحة من وقت البدء المختار هي ${maxAllowedHours} ساعة (لعدم تخطي 5 مساءً).`;
+                        errorMsgEl.classList.remove('hidden');
+                        amount = maxAllowedHours < minDuration ? minDuration : maxAllowedHours;
+                        amountInput.value = amount;
+                    }
+                }
             }
 
             const total = price * amount;
@@ -130,20 +219,20 @@
 
         radios.forEach(radio => radio.addEventListener('change', calculateTotal));
         amountInput.addEventListener('input', calculateTotal);
+        if (startTimeInput) startTimeInput.addEventListener('change', calculateTotal);
 
         btnIncrease.addEventListener('click', () => {
-            amountInput.value = parseFloat(amountInput.value) + 0.5;
+            let step = itemType === 'sale' ? 1 : 0.5;
+            let amount = parseFloat(amountInput.value) + step;
+            amountInput.value = amount;
             calculateTotal();
         });
 
         btnDecrease.addEventListener('click', () => {
-            const selectedRadio = document.querySelector('input[name="pricing_rule_id"]:checked');
-            const minDuration = selectedRadio ? parseFloat(selectedRadio.dataset.min) : 1;
-            
-            if (parseFloat(amountInput.value) > minDuration) {
-                amountInput.value = parseFloat(amountInput.value) - 0.5;
-                calculateTotal();
-            }
+            let step = itemType === 'sale' ? 1 : 0.5;
+            let amount = parseFloat(amountInput.value) - step;
+            amountInput.value = amount;
+            calculateTotal();
         });
 
         calculateTotal();
