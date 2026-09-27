@@ -2,6 +2,7 @@
 
 @section('content')
 <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-sm border border-t-8 border-t-[var(--color-zu-blue)] p-8 text-center mt-10">
+    
     <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
         <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
     </div>
@@ -55,7 +56,6 @@
         </div>
     </div>
     
-    <!-- توضيح مهلة الدفع بوضوح شديد -->
     <div class="bg-red-50 border-r-4 border-red-500 text-red-800 p-4 rounded-lg text-sm mb-6 text-right shadow-sm">
         <div class="flex items-center gap-2 mb-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -66,6 +66,24 @@
         <p class="text-xs mt-2 opacity-80">إذا لم يتم السداد قبل هذا الموعد، سيقوم النظام بإلغاء الطلب تلقائياً.</p>
     </div>
 
-    <a href="/" class="inline-block bg-[var(--color-zu-blue)] text-white px-8 py-3 rounded-lg font-bold hover:bg-[#002244] shadow-md transition">العودة للرئيسية</a>
+    @if(session('warning'))
+        <div class="mb-6 p-4 bg-yellow-50 border-r-4 border-yellow-500 text-yellow-800 rounded-lg text-sm text-right font-bold shadow-sm animate-pulse">
+            <div class="flex items-center gap-2">
+                <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                {{ session('warning') }}
+            </div>
+        </div>
+    @endif
+
+    <div class="flex flex-col sm:flex-row justify-center gap-4 mt-8">
+        <a href="{{ route('booking.receipt.download', $booking->reference_number) }}" class="flex items-center justify-center gap-2 bg-green-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-green-700 shadow-md transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            تحميل إيصال الحجز المبدئي (للتوجه للخزينة)
+        </a>
+        
+        <a href="/" class="flex items-center justify-center gap-2 bg-[var(--color-zu-blue)] text-white px-8 py-3 rounded-lg font-bold hover:bg-[#002244] shadow-md transition">
+            العودة للرئيسية
+        </a>
+    </div>
 </div>
 @endsection

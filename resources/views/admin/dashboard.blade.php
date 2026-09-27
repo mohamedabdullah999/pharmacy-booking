@@ -1,29 +1,69 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة التحكم - كلية الصيدلة جامعة الزقازيق</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-<body class="bg-gray-100 font-sans">
-    <div class="min-h-screen flex flex-col">
-        <header class="bg-zu-blue text-white shadow">
-            <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-                <h1 class="text-xl font-bold">لوحة تحكم النظام - صيدلة الزقازيق</h1>
-                <form action="{{ route('logout') }}" method="POST">
-                    @csrf
-                    <button type="submit" class="bg-zu-maroon px-4 py-2 rounded text-sm hover:bg-opacity-90">تسجيل الخروج</button>
-                </form>
-            </div>
-        </header>
+@extends('layouts.admin')
 
-        <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-8">
-            <div class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">أهلاً بك، {{ auth()->user()->name }}</h2>
-                <p class="text-gray-600">تم تسجيل دخولك بنجاح إلى لوحة تحكم الإدارة. النظام جاهز لإدارة الحجوزات والمخزون.</p>
-            </div>
-        </main>
+@section('title', 'نظرة عامة')
+
+@section('content')
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-r-4 border-r-[var(--color-zu-blue)]">
+        <h3 class="text-gray-500 text-sm font-bold mb-1">إجمالي الأجهزة والمنتجات</h3>
+        <p class="text-3xl font-black text-gray-900">{{ $stats['total_items'] }}</p>
     </div>
-</body>
-</html>
+    
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-r-4 border-r-purple-500">
+        <h3 class="text-gray-500 text-sm font-bold mb-1">إجمالي الطلبات (تاريخياً)</h3>
+        <p class="text-3xl font-black text-gray-900">{{ $stats['total_bookings'] }}</p>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-r-4 border-r-yellow-500">
+        <h3 class="text-gray-500 text-sm font-bold mb-1">حجوزات تنتظر الدفع</h3>
+        <p class="text-3xl font-black text-yellow-600">{{ $stats['pending_bookings'] }}</p>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-r-4 border-r-green-500">
+        <h3 class="text-gray-500 text-sm font-bold mb-1">حجوزات مؤكدة (تم الدفع)</h3>
+        <p class="text-3xl font-black text-green-600">{{ $stats['paid_bookings'] }}</p>
+    </div>
+</div>
+
+<div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+    <div class="p-6 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+        <h2 class="text-lg font-bold text-[var(--color-zu-blue)]">أحدث الحجوزات الواردة</h2>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-right text-sm">
+            <thead class="bg-gray-50 text-gray-600 border-b">
+                <tr>
+                    <th class="p-4 font-bold">الرقم المرجعي</th>
+                    <th class="p-4 font-bold">الطالب</th>
+                    <th class="p-4 font-bold">المنتج / الجهاز</th>
+                    <th class="p-4 font-bold">المبلغ</th>
+                    <th class="p-4 font-bold">الحالة</th>
+                    <th class="p-4 font-bold">تاريخ الطلب</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                @forelse($recentBookings as $booking)
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="p-4 font-black text-[var(--color-zu-maroon)]" dir="ltr">{{ $booking->reference_number }}</td>
+                    <td class="p-4 font-semibold text-gray-800">{{ $booking->customer_name }}</td>
+                    <td class="p-4 text-gray-600">{{ $booking->item->name }}</td>
+                    <td class="p-4 font-bold text-gray-900">{{ $booking->total_price }} ج.م</td>
+                    <td class="p-4">
+                        @if($booking->status === 'pending')
+                            <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-bold">في انتظار الدفع</span>
+                        @elseif($booking->status === 'paid')
+                            <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-bold">تم الدفع</span>
+                        @endif
+                    </td>
+                    <td class="p-4 text-gray-500 text-xs" dir="ltr">{{ $booking->created_at->format('Y-m-d H:i') }}</td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="6" class="p-8 text-center text-gray-500">لا توجد حجوزات حتى الآن.</td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+@endsection
