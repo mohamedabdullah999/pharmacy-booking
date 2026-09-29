@@ -3,25 +3,30 @@
 @section('title', 'نظرة عامة')
 
 @section('content')
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-r-4 border-r-[var(--color-zu-blue)]">
-        <h3 class="text-gray-500 text-sm font-bold mb-1">إجمالي الأجهزة والمنتجات</h3>
-        <p class="text-3xl font-black text-gray-900">{{ $stats['total_items'] }}</p>
+        <h3 class="text-gray-500 text-xs font-bold mb-1">الأجهزة والمنتجات</h3>
+        <p class="text-2xl font-black text-gray-900">{{ $stats['total_items'] }}</p>
     </div>
     
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-r-4 border-r-purple-500">
-        <h3 class="text-gray-500 text-sm font-bold mb-1">إجمالي الطلبات (تاريخياً)</h3>
-        <p class="text-3xl font-black text-gray-900">{{ $stats['total_bookings'] }}</p>
+        <h3 class="text-gray-500 text-xs font-bold mb-1">إجمالي الطلبات</h3>
+        <p class="text-2xl font-black text-gray-900">{{ $stats['total_bookings'] }}</p>
     </div>
 
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-r-4 border-r-yellow-500">
-        <h3 class="text-gray-500 text-sm font-bold mb-1">حجوزات تنتظر الدفع</h3>
-        <p class="text-3xl font-black text-yellow-600">{{ $stats['pending_bookings'] }}</p>
+        <h3 class="text-gray-500 text-xs font-bold mb-1">تنتظر الدفع</h3>
+        <p class="text-2xl font-black text-yellow-600">{{ $stats['pending_bookings'] }}</p>
     </div>
 
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-r-4 border-r-green-500">
-        <h3 class="text-gray-500 text-sm font-bold mb-1">حجوزات مؤكدة (تم الدفع)</h3>
-        <p class="text-3xl font-black text-green-600">{{ $stats['paid_bookings'] }}</p>
+        <h3 class="text-gray-500 text-xs font-bold mb-1">تم الدفع (مؤكدة)</h3>
+        <p class="text-2xl font-black text-green-600">{{ $stats['paid_bookings'] }}</p>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-r-4 border-r-red-500">
+        <h3 class="text-gray-500 text-xs font-bold mb-1">ملغية (تخطت المهلة)</h3>
+        <p class="text-2xl font-black text-red-600">{{ $stats['expired_bookings'] }}</p>
     </div>
 </div>
 
@@ -53,6 +58,8 @@
                             <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-bold">في انتظار الدفع</span>
                         @elseif($booking->status === 'paid')
                             <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-bold">تم الدفع</span>
+                        @elseif($booking->status === 'expired')
+                            <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-bold">ملغي (تخطى المهلة)</span>
                         @endif
                     </td>
                     <td class="p-4 text-gray-500 text-xs" dir="ltr">{{ $booking->created_at->format('Y-m-d H:i') }}</td>

@@ -182,4 +182,14 @@ class ItemController extends Controller
             return back()->withErrors(['error' => 'خطأ أثناء التعديل: ' . $e->getMessage()])->withInput();
         }
     }
+
+    public function destroy(Item $item)
+    {
+        if ($item->bookings()->exists()) {
+            return back()->withErrors(['error' => 'لا يمكن حذف هذا العنصر لوجود طلبات وحجوزات مرتبطة به. يمكنك تعطيله (Inactive) بدلاً من ذلك.']);
+        }
+        
+        $item->delete();
+        return redirect()->route('admin.items.index')->with('success', 'تم حذف العنصر بنجاح.');
+    }
 }

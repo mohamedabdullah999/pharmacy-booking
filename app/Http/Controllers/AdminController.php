@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Booking;
 use App\Models\Item;
-use Illuminate\Http\Request;
+use App\Models\Booking;
 
 class AdminController extends Controller
 {
@@ -15,6 +14,7 @@ class AdminController extends Controller
             'total_bookings' => Booking::count(),
             'pending_bookings' => Booking::where('status', 'pending')->count(),
             'paid_bookings' => Booking::where('status', 'paid')->count(),
+            'expired_bookings' => Booking::where('status', 'expired')->count(), 
         ];
 
         $recentBookings = Booking::with('item')

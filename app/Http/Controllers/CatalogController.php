@@ -6,6 +6,7 @@ use App\Models\Department;
 use App\Models\Item;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use App\Models\Booking;
 
 class CatalogController extends Controller
 {
@@ -31,15 +32,18 @@ class CatalogController extends Controller
 
     public function show($id)
     {
-        $item = Item::with([
-            'pricingRules:id,item_id,unit_type,price,min_duration,condition_text',
-            'department:id,name'
-        ])->findOrFail($id);
-
-        if (!$item->is_active) {
-            abort(404, 'هذا العنصر غير متاح حالياً.');
+        $item = Item::with('pricingRules')->findOrFail($id);
+        
+        $upcomingBookings = collect();
+        if ($item->type === 'rental') {
+            $upcomingBookings = Booking::where('item_id', $item->id)
+                ->whereIn('status', ['pending', 'paid'])
+                ->where('booking_date', '>=', now()->toDateString()) 
+                ->orderBy('booking_date')
+                ->orderBy('start_time')
+                ->get();
         }
 
-        return view('catalog.show', compact('item'));
+        return view('catalog.show', compact('item', 'upcomingBookings'));
     }
 }
