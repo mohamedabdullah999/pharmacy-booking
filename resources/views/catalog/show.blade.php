@@ -130,7 +130,7 @@
                         <label class="block text-sm font-bold text-gray-700 mb-1">
                             {{ $item->type === 'sale' ? 'الكمية المطلوبة (بعدد الوحدات)' : 'المدة المطلوبة (رقم)' }} <span class="text-red-500">*</span>
                         </label>
-                        <input type="number" step="0.1" name="requested_amount" id="requested_amount" value="{{ old('requested_amount', 1) }}" required class="w-full p-2 border border-gray-300 rounded-lg">
+                        <input type="number" step="0.1" min="0" name="requested_amount" id="requested_amount" value="{{ old('requested_amount', 1) }}" required class="w-full p-2 border border-gray-300 rounded-lg">
                         @if($item->type === 'sale')
                             <p class="text-xs text-gray-500 mt-1">الكمية المتاحة حالياً: <strong class="text-green-600">{{ $item->stock_quantity }}</strong> وحدات</p>
                         @endif
@@ -187,8 +187,12 @@
             
             const selectedOption = ruleSelect.options[ruleSelect.selectedIndex];
             const price = parseFloat(selectedOption.getAttribute('data-price')) || 0;
-            const unit = selectedOption.getAttribute('data-unit') || '';
-            const amount = parseFloat(amountInput ? amountInput.value : 0) || 0;
+            let amount = parseFloat(amountInput ? amountInput.value : 0) || 0;
+            
+            if (amount < 0) {
+                amount = 0;
+                if (amountInput) amountInput.value = 0;
+            }
             
             if (totalDisplay) {
                 const total = price * amount;
@@ -209,7 +213,15 @@
         }
 
         if (ruleSelect) ruleSelect.addEventListener('change', updateUI);
-        if (amountInput) amountInput.addEventListener('input', updateUI);
+        
+        if (amountInput) {
+            amountInput.addEventListener('keydown', function(e) {
+                if (e.key === '-' || e.key === 'e') {
+                    e.preventDefault();
+                }
+            });
+            amountInput.addEventListener('input', updateUI);
+        }
 
         updateUI(); 
     });
