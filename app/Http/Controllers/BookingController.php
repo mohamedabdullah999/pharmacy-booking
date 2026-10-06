@@ -25,6 +25,7 @@ class BookingController extends Controller
             'customer_email' => 'required|email|max:255',
         ];
 
+        $unit = '';
         $isHourly = false;
         if ($request->has('pricing_rule_id')) {
             $pricingRule = ItemPricingRule::where('id', $request->pricing_rule_id)
@@ -39,13 +40,9 @@ class BookingController extends Controller
         if ($item->type === 'sale') {
             $rules['requested_amount'] = 'required|integer|min:1'; 
         } else {
-            $rules['requested_amount'] = 'required|numeric|min:0.5';
+            $rules['requested_amount'] = $isHourly ? 'required|numeric|min:0.5|max:8' : 'required|numeric|min:0.5';
             $rules['booking_date'] = 'required|date|after_or_equal:today';
             $rules['start_time'] = 'required|date_format:H:i';
-            
-            if (!$isHourly) {
-                $rules['end_time'] = 'required|date_format:H:i|after:start_time'; 
-            }
         }
 
         $validated = $request->validate($rules);
@@ -67,41 +64,80 @@ class BookingController extends Controller
             $startTimeFormatted = null;
             $endTimeFormatted = null;
             $bookingDate = null;
+            $endDate = null;
 
             if ($lockedItem->type === 'rental') {
                 $bookingDate = $validated['booking_date'];
-                $startDateTime = Carbon::parse($bookingDate . ' ' . $validated['start_time']);
-                
-                if ($isHourly) {
-                    $requestedMinutes = (float)$validated['requested_amount'] * 60;
-                    $endDateTime = $startDateTime->copy()->addMinutes($requestedMinutes);
-                } else {
-                    $endDateTime = Carbon::parse($bookingDate . ' ' . $validated['end_time']);
-                }
+                $startTimeFormatted = date('H:i:s', strtotime($validated['start_time']));
+                $startDateTime = Carbon::parse("{$bookingDate} {$startTimeFormatted}");
                 
                 if ($startDateTime->isFriday()) {
                     DB::rollBack();
                     return back()->withErrors(['date' => 'يوم الجمعة عطلة رسمية. يرجى اختيار يوم آخر.'])->withInput();
                 }
 
-                $businessStart = Carbon::parse($bookingDate . ' 09:00:00');
-                $businessEnd = Carbon::parse($bookingDate . ' 17:00:00'); 
+                $quantity = (float)$validated['requested_amount'];
+                $unit = strtolower(trim($pricingRule->unit_type));
 
-                if ($startDateTime->lt($businessStart)) {
-                    DB::rollBack();
-                    return back()->withErrors(['time' => 'مواعيد العمل تبدأ من 9:00 صباحاً.'])->withInput();
+                if ($isHourly) {
+                    if ($quantity > 8) {
+                        DB::rollBack();
+                        return back()->withErrors(['amount' => __('الحد الأقصى للحجز بالساعة هو 8 ساعات في اليوم الواحد.')])->withInput();
+                    }
+                    $requestedMinutes = $quantity * 60;
+                    $endDateTime = $startDateTime->copy()->addMinutes($requestedMinutes);
+                    $endDate = $startDateTime->toDateString();
+                } else {
+                    $totalWorkingDays = 0;
+                    
+                    if (str_contains($unit, 'week') || str_contains($unit, 'أسبوع') || str_contains($unit, 'اسبوع')) {
+                        $totalWorkingDays = (int)$quantity * 7; 
+                    } elseif (str_contains($unit, 'month') || str_contains($unit, 'شهر') || str_contains($unit, 'أشهر')) {
+                        $totalWorkingDays = (int)$quantity * 30; 
+                    } elseif (str_contains($unit, 'day') || str_contains($unit, 'يوم') || str_contains($unit, 'أيام')) {
+                        $totalWorkingDays = (int)$quantity; 
+                    } else {
+                        $totalWorkingDays = (int)$quantity;
+                    }
+
+                    $endDateTime = $startDateTime->copy();
+                    $addedDays = 0;
+                    $targetAdditionalDays = $totalWorkingDays - 1;
+                    
+                    while ($addedDays < $targetAdditionalDays) {
+                        $endDateTime->addDay();
+                        if (!$endDateTime->isFriday()) {
+                            $addedDays++;
+                        }
+                    }
+                    
+                    if ($endDateTime->isFriday()) {
+                        $endDateTime->addDay();
+                    }
+                    $endDateTime->setTime(17, 0, 0);
+                    $endDate = $endDateTime->toDateString();
                 }
-                if ($endDateTime->gt($businessEnd)) {
+
+                $businessStart = Carbon::parse($bookingDate . ' 09:00:00');
+                $businessEnd = Carbon::parse($bookingDate . ' 17:00:00');
+
+                if ($startDateTime->lt($businessStart) || $startDateTime->gt($businessEnd)) {
                     DB::rollBack();
-                    return back()->withErrors(['time' => 'لا يمكن أن يتخطى وقت الانتهاء موعد إغلاق الكلية (5:00 مساءً).'])->withInput();
+                    return back()->withErrors(['time' => 'مواعيد العمل الرسمية تبدأ من 9:00 صباحاً وحتى 5:00 مساءً.'])->withInput();
+                }
+
+                if ($endDateTime->gt($businessEnd) && $isHourly) {
+                    DB::rollBack();
+                    return back()->withErrors(['time' => 'وقت الانتهاء يتجاوز أوقات العمل الرسمية (5:00 مساءً).'])->withInput();
                 }
 
                 $overlapping = Booking::where('item_id', $lockedItem->id)
-                    ->where('booking_date', $bookingDate)
                     ->whereIn('status', ['pending', 'paid'])
                     ->where(function ($query) use ($startDateTime, $endDateTime) {
                         $query->where('start_time', '<', $endDateTime->format('H:i:s'))
-                              ->where('end_time', '>', $startDateTime->format('H:i:s'));
+                              ->where('end_time', '>', $startDateTime->format('H:i:s'))
+                              ->where('booking_date', '<=', $endDateTime->toDateString())
+                              ->where(DB::raw("COALESCE(end_date, booking_date)"), '>=', $startDateTime->toDateString());
                     })->exists();
 
                 if ($overlapping) {
@@ -135,6 +171,7 @@ class BookingController extends Controller
                 'requested_amount' => $validated['requested_amount'],
                 'total_price' => $totalPrice,
                 'booking_date' => $bookingDate,
+                'end_date' => $endDate,
                 'start_time' => $startTimeFormatted,
                 'end_time' => $endTimeFormatted,
                 'status' => 'pending',
@@ -149,7 +186,7 @@ class BookingController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'حدث خطأ أثناء المعالجة، حاول مرة أخرى.'])->withInput();
+            return back()->withErrors(['error' => 'حدث خطأ أثناء المعالجة، حاول مرة أخرى: ' . $e->getMessage()])->withInput();
         }
     }
 
@@ -170,7 +207,6 @@ class BookingController extends Controller
             return response()->download(storage_path('app/public/' . $filePath));
         }
 
-        return back()->with('warning', 'جاري تجهيز الإيصال الإلكتروني... يرجى تحديث الصفحة والضغط على الزر مرة أخرى بعد ثوانٍ قليلة.');
+        return back()->with('warning', 'جاري تجهيز الإيصال الإلكتروني... يرجى تحديث الصفحة والضغط على الزر مرة أخرى بعد ثوان قليلة.');
     }
-
 }

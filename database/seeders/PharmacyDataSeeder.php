@@ -19,7 +19,6 @@ class PharmacyDataSeeder extends Seeder
                 'وحدة بحوث التقنية الحيوية' => Department::firstOrCreate(['name' => 'وحده بحوث التقنية الحيوية والدلالات المرضية']),
             ];
 
-           
             $labItems = [
                 ['name' => 'X-ray film', 'type' => 'sale', 'rules' => [['unit' => 'PIECE 4*8 Cm', 'price' => 25]]],
                 ['name' => 'TEMED', 'type' => 'sale', 'rules' => [['unit' => '10 µl', 'price' => 30]]],
@@ -44,7 +43,6 @@ class PharmacyDataSeeder extends Seeder
 
             $this->seedItems($departments['المعامل']->id, $labItems);
 
-            
             $bioTechItems = [
                 ['name' => 'Spectrophotometer(cuvette)', 'brand' => 'JENWAY-PRC-UK', 'model' => 'GENOVA', 'type' => 'rental', 'rules' => [['unit' => 'hr', 'price' => 150, 'min' => 0.5]]],
                 ['name' => 'Multi-Mode Microplate Reader (ELISA)', 'brand' => 'Biotek -USA', 'model' => 'SYNERGY HT', 'type' => 'rental', 'rules' => [['unit' => 'Run - Absorbance', 'price' => 100], ['unit' => 'Run - Floursance', 'price' => 150]]],
@@ -81,7 +79,6 @@ class PharmacyDataSeeder extends Seeder
 
             $this->seedItems($departments['وحدة بحوث التقنية الحيوية']->id, $bioTechItems);
 
-           
             $precisionItems = [
                 ['name' => 'HPLC -PDA 1', 'brand' => 'Agilent technologies -(USA)', 'model' => 'Agilent 1200 series', 'type' => 'rental', 'rules' => [['unit' => 'sample', 'price' => 150], ['unit' => 'hr', 'price' => 450, 'min' => 0.5], ['unit' => 'one day', 'price' => 1500]]],
                 ['name' => 'HPLC -PDA 2', 'brand' => 'Thermo scientific - (USA)', 'model' => 'Finnigan Surveyor PDA Plus Detector', 'type' => 'rental', 'rules' => [['unit' => 'sample', 'price' => 150], ['unit' => 'hr', 'price' => 450, 'min' => 0.5], ['unit' => 'one day', 'price' => 1500]]],
@@ -129,7 +126,41 @@ class PharmacyDataSeeder extends Seeder
                 'stock_quantity' => $itemData['type'] === 'sale' ? 100 : 1, 
             ]);
 
+            $processedRules = [];
+            $hasHour = false;
+            
+            if ($itemData['type'] === 'rental') {
+                foreach ($itemData['rules'] as $rule) {
+                    $u = strtolower(trim($rule['unit']));
+                    if (in_array($u, ['hr', 'hour'])) {
+                        $hasHour = true;
+                        break;
+                    }
+                }
+            }
+
             foreach ($itemData['rules'] as $rule) {
+                $unit = trim($rule['unit']);
+                $lowerUnit = strtolower($unit);
+                
+                if ($itemData['type'] === 'rental') {
+                    $isStandard = preg_match('/(hr|hour|day|week|month|box)/i', $lowerUnit);
+                    
+                    if (!$isStandard) {
+                        if (!$hasHour) {
+                            $rule['unit'] = 'hr'; 
+                            $processedRules['hr'] = $rule;
+                            $hasHour = true;
+                        }
+                    } else {
+                        $processedRules[$lowerUnit] = $rule;
+                    }
+                } else {
+                    $processedRules[$lowerUnit] = $rule;
+                }
+            }
+
+            foreach ($processedRules as $rule) {
                 ItemPricingRule::firstOrCreate([
                     'item_id' => $item->id,
                     'unit_type' => $rule['unit'],
@@ -139,5 +170,5 @@ class PharmacyDataSeeder extends Seeder
                 ]);
             }
         }
-    }
+    } 
 }

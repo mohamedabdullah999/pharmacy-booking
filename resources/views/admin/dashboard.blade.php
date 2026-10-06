@@ -4,8 +4,8 @@
 
 @section('content')
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-r-4 border-r-[var(--color-zu-blue)]">
-        <h3 class="text-gray-500 text-xs font-bold mb-1">الأجهزة والمنتجات</h3>
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-s-4 border-s-[var(--color-zu-blue)]">
+        <h3 class="text-gray-500 text-xs font-bold mb-1">{{ __('الأجهزة والمنتجات') }}</h3>
         <p class="text-2xl font-black text-gray-900">{{ $stats['total_items'] }}</p>
     </div>
     

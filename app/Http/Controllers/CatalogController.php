@@ -7,6 +7,7 @@ use App\Models\Item;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Booking;
+use Illuminate\Support\Facades\Schema;
 
 class CatalogController extends Controller
 {
@@ -31,19 +32,26 @@ class CatalogController extends Controller
     return view('catalog.index', compact('items', 'departments'));
 }
 
-    public function show($id)
+  public function show($id)
     {
-        $item = Item::with('pricingRules')->findOrFail($id);
-        
-        $upcomingBookings = collect();
-        if ($item->type === 'rental') {
-            $upcomingBookings = Booking::where('item_id', $item->id)
-                ->whereIn('status', ['pending', 'paid'])
-                ->where('booking_date', '>=', now()->toDateString()) 
-                ->orderBy('booking_date')
-                ->orderBy('start_time')
-                ->get();
-        }
+        $item = Item::with('pricingRules', 'department')->findOrFail($id);
+
+        $hasEndDate = Schema::hasColumn('bookings', 'end_date');
+
+        $upcomingBookings = Booking::where('item_id', $item->id)
+            ->whereIn('status', ['pending', 'paid'])
+            ->where(function($q) use ($hasEndDate) {
+                $q->where('booking_date', '>=', now()->toDateString());
+                if ($hasEndDate) {
+                    $q->orWhere(function($q2) {
+                        $q2->whereNotNull('end_date')
+                           ->where('end_date', '>=', now()->toDateString());
+                    });
+                }
+            })
+            ->orderBy('booking_date')
+            ->orderBy('start_time')
+            ->get();
 
         return view('catalog.show', compact('item', 'upcomingBookings'));
     }
